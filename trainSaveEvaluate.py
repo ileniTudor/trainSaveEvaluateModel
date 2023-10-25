@@ -68,7 +68,7 @@ def create_model():
 
 def trainAndSave(X_train, Y_train):
     model.fit(X_train, Y_train, epochs=20, batch_size=5)
-    model.save("prediction_model.h5")
+    model.save("house_prediction_model.h5")
     return model
 
 
