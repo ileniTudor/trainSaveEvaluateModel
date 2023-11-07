@@ -49,6 +49,7 @@ def cleanData(dataframe):
     # scale numerical features
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
+
     joblib.dump(scaler, "data_transformer.joblib")
     with open('scaler.pkl', 'wb') as f:
         pickle.dump(scaler, f)

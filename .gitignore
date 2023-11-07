@@ -543,7 +543,8 @@ cython_debug/
 ### Python Patch ###
 # Poetry local configuration file - https://python-poetry.org/docs/configuration/#local-configuration
 poetry.toml
-
+*.h5
+*.zip
 # ruff
 .ruff_cache/
 
