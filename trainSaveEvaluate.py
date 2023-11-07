@@ -1,14 +1,9 @@
-from select import epoll
-
 from pandas import read_csv
 import keras
 from keras import layers
 from sklearn.model_selection import train_test_split
 from miceforest import ImputationKernel
 
-# from scikeras.wrappers import KerasRegressor
-# from sklearn.model_selection import cross_val_score
-# from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 import pickle
 import joblib
@@ -77,7 +72,7 @@ def evaluate(model, X_test, Y_test):
     # with open('scaler.pkl','rb') as f:
     #     sc = pickle.load(f)
     # X_test = sc.fit_transform(X_test)
-    model.load_weights("prediction_model.h5")
+    model.load_weights("house_prediction_model.h5")
     e = model.evaluate(X_test, Y_test)
     return e
 

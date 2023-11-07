@@ -32,10 +32,18 @@ def filter_corrupted_image():
 
 
 def load_data_set():
-    train_ds, val_ds = tf.keras.utils.image_dataset_from_directory(
+    train_ds = tf.keras.utils.image_dataset_from_directory(
         "kagglecatsanddogs_5340/"+dir_name,
         validation_split=0.2,
-        subset="both",
+        subset="training",
+        seed=1337,
+        image_size=image_size,
+        batch_size=batch_size,
+    )
+    val_ds = tf.keras.utils.image_dataset_from_directory(
+        "kagglecatsanddogs_5340/"+dir_name,
+        validation_split=0.2,
+        subset="validation",
         seed=1337,
         image_size=image_size,
         batch_size=batch_size,
@@ -88,21 +96,6 @@ def make_model(input_shape, num_classes):
     outputs = layers.Dense(units, activation=activation)(x)
     return keras.Model(inputs, outputs)
 
-
-def get_model():
-    data_augmentation = keras.Sequential(
-        [
-            layers.RandomFlip("horizontal"),
-            layers.RandomRotation(0.1),
-        ]
-    )
-
-    inputs = keras.Input(shape=input_shape)
-    x = data_augmentation(inputs)
-    x = layers.Rescaling(1. / 255)(x)
-
-    # model = make_model(input_shape=input_shape, num_classes=2)
-    # return model
 
 
 def train(model, train_ds, val_ds, epochs=25):
