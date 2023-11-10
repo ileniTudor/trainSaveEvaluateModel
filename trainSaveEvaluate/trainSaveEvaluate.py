@@ -62,7 +62,7 @@ def create_model():
     return model
 
 
-def trainAndSave(X_train, Y_train):
+def trainAndSave(model, X_train, Y_train):
     model.fit(X_train, Y_train, epochs=20, batch_size=5)
     model.save("house_prediction_model.h5")
     return model
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     X_train, X_test, Y_train, Y_test = cleanData(dataframe)
 
     model = create_model()
-    model = trainAndSave(X_train, Y_train)
+    model = trainAndSave(model, X_train, Y_train)
     score = evaluate(model, X_test, Y_test)
 
     print("score", score)
