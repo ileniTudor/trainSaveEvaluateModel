@@ -8,12 +8,15 @@ import requests
 import joblib
 import pandas as pd
 from flask import Flask, jsonify, request, render_template, make_response
+from flask_cors import CORS  # This is the magic
+
 from tensorflow import keras
 import os
 
 os.environ["FLASK_DEBUG"] = "1"
 
 app = Flask(__name__, template_folder="templates")
+CORS(app)
 
 transformer = joblib.load("deploy/flask_app/model/data_transformer.joblib")
 model = keras.models.load_model("deploy/flask_app/model/house_prediction_model.h5")
@@ -28,6 +31,7 @@ def home():
 
 @app.route("/predict", methods=["GET", "POST"])
 def index():
+
     data = request.json
 
     input_arr = []
@@ -40,5 +44,7 @@ def index():
     predicted_score = expm1(prediction.flatten()[0])
 
     response = make_response(str(predicted_score), 200)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+
     response.mimetype = "text/plain"
     return response

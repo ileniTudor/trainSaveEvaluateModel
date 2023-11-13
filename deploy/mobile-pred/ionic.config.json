@@ -1,0 +1,7 @@
+{
+  "name": "mobile-pred",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
