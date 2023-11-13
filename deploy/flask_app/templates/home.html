@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Housing scores</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.0/css/bulma.min.css">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+{#    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>#}
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+
+    <title>Prediction home</title>
+     <script>
+         $(document).ready( function() {
+            $('#submit').click(function() {
+               var formdata = {
+                   "a0":$("#a0").val(),
+                   "a1":$("#a1").val(),
+                   "a2":$("#a2").val(),
+                   "a3":$("#a3").val(),
+                   "a4":$("#a4").val(),
+                   "a5":$("#a5").val(),
+                   "a6":$("#a6").val(),
+                   "a7":$("#a7").val(),
+                   "a8":$("#a8").val(),
+                   "a9":$("#a9").val(),
+                   "a10":$("#a10").val(),
+                   "a11":$("#a11").val(),
+                   "a12":$("#a12").val()}
+               $.ajax({
+                     type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formdata),
+                    dataType: 'json',
+                    url: 'http://127.0.0.1:5000/predict',
+                    success: function (e) {
+                        console.log("success",e);
+                    },
+                    error: function(error) {
+                        console.log(error);
+                    }
+                });
+            });
+         });
+    </script>
+
+</head>
+<body>
+<div >
+{#        <form action="predict" method="GET">#}
+            <div class="card" style="width: 400px">
+            <div class="card-content">
+                <div class="media">
+                    <div class="is-size-4 has-text-centered">House Score Prediction</div>
+                </div>
+                <div class="content">
+
+                <div class="field">
+                    <p class="control">
+                    a0: <input class="input" type="number"  value='1'   id="a0">
+                    </p>
+                </div>
+
+                <div class="field">
+                    <p class="control">
+                    a1: <input class="input" type="number"  value='1'   id="a1">
+                    </p>
+                </div>
+
+                <div class="field">
+                    <p class="control">
+                    a2: <input class="input" type="number"  value='1'   id="a2">
+                    </p>
+                </div>
+
+                <div class="field">
+                    <p class="control">
+                    a3: <input class="input" type="number"  value='1'   id="a3">
+                    </p>
+                </div>
+
+                <div class="field">
+                    <p class="control">
+                    a4: <input class="input" type="number"  value='1'   id="a4">
+                    </p>
+                </div>
+
+                                    <div class="field">
+                    <p class="control">
+                    a5: <input class="input" type="number"  value='1'   id="a5">
+                    </p>
+                </div>
+
+                <div class="field">
+                    <p class="control">
+                    a6: <input class="input" type="number"  value='1'   id="a6">
+                    </p>
+                </div>
+
+                <div class="field">
+                    <p class="control">
+                    a7: <input class="input" type="number"  value='1'   id="a7">
+                    </p>
+                </div>
+
+                <div class="field">
+                    <p class="control">
+                    a8: <input class="input" type="number"  value='1'   id="a8">
+                    </p>
+                </div>
+
+                                    <div class="field">
+                    <p class="control">
+                    aa9: <input class="input" type="number"  value='1'   id="a9">
+                    </p>
+                </div>
+
+                <div class="field">
+                    <p class="control">
+                    a10: <input class="input" type="number"  value='1'   id="a10">
+                    </p>
+                </div>
+
+                <div class="field">
+                    <p class="control">
+                    a11: <input class="input" type="number"  value='1'   id="a11">
+                    </p>
+                </div>
+
+                <div class="field">
+                    <p class="control">
+                    a12: <input class="input" type="number"  value='1'   id="a12">
+                    </p>
+                </div>
+
+
+                <div class="field">
+                    <button id="submit" class="button is-fullwidth is-rounded is-success">Submit2</button>
+                </div>
+                </div>
+            </div>
+{#        </form>#}
+    </div>
+</body>
+</html>
