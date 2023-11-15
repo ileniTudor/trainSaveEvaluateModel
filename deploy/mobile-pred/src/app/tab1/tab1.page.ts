@@ -28,7 +28,8 @@ export class Tab1Page implements OnInit  {
   }
   getScore() {
     console.log("getScore")
-    let apiUrl = "http://127.0.0.1:5000/predict"
+    // let apiUrl = "http://127.0.0.1:5000/predict"
+    let apiUrl = " http://127.0.0.1:5000/predict"
 
     let config ={ headers: new HttpHeaders().set('Access-Control-Allow-Origin', '*')
         // .set('Content-Type', 'application/json')
