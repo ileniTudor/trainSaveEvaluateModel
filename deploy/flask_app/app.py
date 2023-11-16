@@ -18,8 +18,8 @@ os.environ["FLASK_DEBUG"] = "1"
 app = Flask(__name__, template_folder="templates")
 CORS(app)
 
-transformer = joblib.load("model/data_transformer.joblib")
-model = keras.models.load_model("model/house_prediction_model.h5")
+transformer = joblib.load("deploy/flask_app/model/data_transformer.joblib")
+model = keras.models.load_model("deploy/flask_app/model/house_prediction_model.h5")
 
 
 # Initialize the flask class and specify the templates directory
