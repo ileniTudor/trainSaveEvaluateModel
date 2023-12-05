@@ -1,8 +1,7 @@
 import requests
-url = "https://api.obviously.ai/v3/model/automl/predict/single/04ed4ad0-7d3b-11ee-95a6-a7231b034929"
+url = "https://api.obviously.ai/v3/model/automl/predict/single/05bc7020-8a22-11ee-b3a7-b7ae08b39965"
 
 payload = {
-	"gender": "Female",
 	"SeniorCitizen": "0",
 	"Partner": "Yes",
 	"Dependents": "No",
@@ -20,15 +19,15 @@ payload = {
 	"PaperlessBilling": "Yes",
 	"PaymentMethod": "Electronic check",
 	"MonthlyCharges": "29.85",
-	"TotalCharges": "29.85"
+	"TotalCharges": "29.85",
+	"Churn": "No"
 }
 
 headers = {
    "Accept": "application/json",
-   "Authorization": "ApiKey 1a52266a-7d3b-11ee-9e0f-1a025ee0ca8d",
+   "Authorization": "ApiKey 7664f7ee-8a0f-11ee-9530-6eecdea147e5",
    "Content-Type": "application/json"
 }
 
 response = requests.post(url, json=payload, headers=headers)
 print(response.text)
-print("done")
