@@ -1,24 +1,18 @@
-# https://keras.io/examples/vision/image_classification_from_scratch/
-# dataset https://download.microsoft.com/download/3/E/1/3E1C3F21-ECDB-4869-8368-6DEBA77B919F/kagglecatsanddogs_5340.zip
-
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-import matplotlib.pyplot as plt
-
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torchvision import datasets, transforms, models
+from torch.utils.data import DataLoader, random_split
 import os
 
-image_size = (180, 180)
-batch_size = 128
-input_shape = image_size + (3,)
-dir_name = "PetImages_small"
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 # Filter out corrupted images
-def filter_corrupted_image():
+def filter_corrupted_image(dir_name):
     num_skipped = 0
     for folder_name in ("Cat", "Dog"):
-        folder_path = os.path.join("kagglecatsanddogs_5340/"+dir_name, folder_name)
+        folder_path = os.path.join("kagglecatsanddogs_5340/" + dir_name, folder_name)
         for fname in os.listdir(folder_path):
             fpath = os.path.join(folder_path, fname)
             try:
@@ -31,109 +25,124 @@ def filter_corrupted_image():
                 os.remove(fpath)
 
 
-def load_data_set():
-    train_ds = tf.keras.utils.image_dataset_from_directory(
-        "kagglecatsanddogs_5340/"+dir_name,
-        validation_split=0.2,
-        subset="training",
-        seed=1337,
-        image_size=image_size,
-        batch_size=batch_size,
-    )
-    val_ds = tf.keras.utils.image_dataset_from_directory(
-        "kagglecatsanddogs_5340/"+dir_name,
-        validation_split=0.2,
-        subset="validation",
-        seed=1337,
-        image_size=image_size,
-        batch_size=batch_size,
-    )
-    return train_ds, val_ds
+def load_data(data_dir):
+    train_dir = os.path.join(data_dir, 'train')
+    val_dir = os.path.join(data_dir, 'val')
+
+    train_transforms = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+
+    val_transforms = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+
+    train_dataset = datasets.ImageFolder(train_dir, transform=train_transforms)
+    val_dataset = datasets.ImageFolder(val_dir, transform=val_transforms)
+
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
+    return train_loader, val_loader
 
 
-def make_model(input_shape, num_classes):
-    inputs = keras.Input(shape=input_shape)
-
-    # Entry block
-    x = layers.Rescaling(1.0 / 255)(inputs)
-    x = layers.Conv2D(128, 3, strides=2, padding="same")(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-
-    previous_block_activation = x  # Set aside residual
-
-    for size in [256, 512, 728]:
-        x = layers.Activation("relu")(x)
-        x = layers.SeparableConv2D(size, 3, padding="same")(x)
-        x = layers.BatchNormalization()(x)
-
-        x = layers.Activation("relu")(x)
-        x = layers.SeparableConv2D(size, 3, padding="same")(x)
-        x = layers.BatchNormalization()(x)
-
-        x = layers.MaxPooling2D(3, strides=2, padding="same")(x)
-
-        # Project residual
-        residual = layers.Conv2D(size, 1, strides=2, padding="same")(
-            previous_block_activation
-        )
-        x = layers.add([x, residual])  # Add back residual
-        previous_block_activation = x  # Set aside next residual
-
-    x = layers.SeparableConv2D(1024, 3, padding="same")(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-
-    x = layers.GlobalAveragePooling2D()(x)
-    if num_classes == 2:
-        activation = "sigmoid"
-        units = 1
+def get_model(model_name):
+    if model_name == "resnet18":
+        model = models.resnet18(pretrained=True)
     else:
-        activation = "softmax"
-        units = num_classes
+        model = models.resnet32(pretrained=True)
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, 2)  # Assuming 2 classes: cat and dog
 
-    x = layers.Dropout(0.5)(x)
-    outputs = layers.Dense(units, activation=activation)(x)
-    return keras.Model(inputs, outputs)
-
-
-
-def train(model, train_ds, val_ds, epochs=25):
-    # callbacks = [
-    #     keras.callbacks.ModelCheckpoint("save_at_{epoch}.keras"),
-    # ]
-    model.compile(
-        optimizer=keras.optimizers.Adam(1e-3),
-        loss="binary_crossentropy",
-        metrics=["accuracy"],
-    )
-    model.fit(
-        train_ds,
-        epochs=epochs,
-        # callbacks=callbacks,
-        validation_data=val_ds,
-    )
-    model.save("cat_vs_dog_model.h5")
+    model = model.to(device)
+    return model
 
 
-def test(model):
-    model.load_weights("cat_vs_dog_model.h5")
-    img = keras.utils.load_img(
-        "kagglecatsanddogs_5340/PetImages/Cat/6779.jpg", target_size=image_size
-    )
-    plt.imshow(img)
+# Training function
+def train(model, train_loader, criterion, optimizer, device):
+    model.train()
+    running_loss = 0.0
+    correct = 0
+    total = 0
 
-    img_array = keras.utils.img_to_array(img)
-    img_array = tf.expand_dims(img_array, 0)  # Create batch axis
+    for inputs, labels in train_loader:
+        inputs, labels = inputs.to(device), labels.to(device)
 
-    predictions = model.predict(img_array)
-    score = float(predictions[0])
-    print(f"This image is {100 * (1 - score):.2f}% cat and {100 * score:.2f}% dog.")
+        optimizer.zero_grad()
+
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item() * inputs.size(0)
+        _, predicted = torch.max(outputs, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+    epoch_loss = running_loss / len(train_loader.dataset)
+    epoch_acc = correct / total
+
+    return epoch_loss, epoch_acc
+
+
+# Evaluation function
+def evaluate(model, val_loader, criterion, device):
+    model.eval()
+    running_loss = 0.0
+    correct = 0
+    total = 0
+
+    with torch.no_grad():
+        for inputs, labels in val_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+
+            running_loss += loss.item() * inputs.size(0)
+            _, predicted = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    epoch_loss = running_loss / len(val_loader.dataset)
+    epoch_acc = correct / total
+
+    return epoch_loss, epoch_acc
+
+
+def run(model, train_loader, val_loader):
+    # Main training loop
+    num_epochs = 10
+    best_acc = 0.0
+
+    # Define the loss function and optimizer
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+
+    for epoch in range(num_epochs):
+        train_loss, train_acc = train(model, train_loader, criterion, optimizer, device)
+        val_loss, val_acc = evaluate(model, val_loader, criterion, device)
+
+        print(f'Epoch {epoch + 1}/{num_epochs}')
+        print(f'Train Loss: {train_loss:.4f} Train Acc: {train_acc:.4f}')
+        print(f'Val Loss: {val_loss:.4f} Val Acc: {val_acc:.4f}')
+
+        if val_acc > best_acc:
+            best_acc = val_acc
+            torch.save(model.state_dict(), 'best_model.pth')
+
+    print(f'Best Val Acc: {best_acc:.4f}')
 
 
 if __name__ == "__main__":
     # filter_corrupted_image()
-    train_ds, val_ds = load_data_set()
-    model = make_model(input_shape=input_shape, num_classes=2)
-    train(model, train_ds, val_ds, epochs=10)
-    test(model)
+    data_dir = "kagglecatsanddogs_5340/PetImages_small"
+    train_loader, var_loader = load_data(data_dir)
+    # Define the loss function and optimizer
+    model = get_model("resnet18")
+    run(model, train_loader, var_loader)
