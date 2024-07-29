@@ -1,14 +1,14 @@
+import os
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
-from torch.utils.data import DataLoader, random_split
-import os
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-# Filter out corrupted images
 def filter_corrupted_image(dir_name):
     num_skipped = 0
     for folder_name in ("Cat", "Dog"):
@@ -26,8 +26,8 @@ def filter_corrupted_image(dir_name):
 
 
 def load_data(data_dir):
-    train_dir = os.path.join(data_dir, 'train')
-    val_dir = os.path.join(data_dir, 'val')
+    train_dir = os.path.join(data_dir, 'PetImages')
+    val_dir = os.path.join(data_dir, 'PetImages_small')
 
     train_transforms = transforms.Compose([
         transforms.Resize((224, 224)),
@@ -62,13 +62,12 @@ def get_model(model_name):
     return model
 
 
-# Training function
 def train(model, train_loader, criterion, optimizer, device):
     model.train()
     running_loss = 0.0
     correct = 0
     total = 0
-
+    b_idx = 0
     for inputs, labels in train_loader:
         inputs, labels = inputs.to(device), labels.to(device)
 
@@ -84,13 +83,15 @@ def train(model, train_loader, criterion, optimizer, device):
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 
+        if b_idx % 50 == 0:
+            print('[%d] loss: %.3f acc: %.3f' % (b_idx, loss.item(), correct / total))
+        b_idx += 1
+
     epoch_loss = running_loss / len(train_loader.dataset)
     epoch_acc = correct / total
 
     return epoch_loss, epoch_acc
 
-
-# Evaluation function
 def evaluate(model, val_loader, criterion, device):
     model.eval()
     running_loss = 0.0
@@ -115,12 +116,10 @@ def evaluate(model, val_loader, criterion, device):
     return epoch_loss, epoch_acc
 
 
-def run(model, train_loader, val_loader):
-    # Main training loop
+def run(model, train_loader, val_loader, model_name):
     num_epochs = 10
     best_acc = 0.0
 
-    # Define the loss function and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
@@ -134,15 +133,15 @@ def run(model, train_loader, val_loader):
 
         if val_acc > best_acc:
             best_acc = val_acc
-            torch.save(model.state_dict(), 'best_model.pth')
+            torch.save(model.state_dict(), f'best_model_{model_name}.pth')
 
     print(f'Best Val Acc: {best_acc:.4f}')
 
 
 if __name__ == "__main__":
     # filter_corrupted_image()
-    data_dir = "kagglecatsanddogs_5340/PetImages_small"
+    data_dir = "../kagglecatsanddogs_5340"
     train_loader, var_loader = load_data(data_dir)
-    # Define the loss function and optimizer
-    model = get_model("resnet18")
-    run(model, train_loader, var_loader)
+    model_name = 'resnet18'
+    model = get_model(model_name)
+    run(model, train_loader, var_loader, model_name)
