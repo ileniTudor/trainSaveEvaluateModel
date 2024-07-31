@@ -3,12 +3,35 @@
   <head>
     <meta charset="utf-8">
     <title>Upload Image</title>
+    <script>
+      function uploadFile(event) {
+        event.preventDefault();
+        var formData = new FormData(document.getElementById("uploadForm"));
+        fetch('/', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            document.getElementById("result").innerText = "Error: " + data.error;
+          } else {
+            document.getElementById("result").innerText = "The uploaded image is a: " + data.label;
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById("result").innerText = "An error occurred while processing the image.";
+        });
+      }
+    </script>
   </head>
   <body>
     <h1>Upload a photo of a cat or a dog</h1>
-    <form method="post" enctype="multipart/form-data">
+    <form id="uploadForm" onsubmit="uploadFile(event)" enctype="multipart/form-data">
       <input type="file" name="file">
       <input type="submit" value="Upload">
     </form>
+    <p id="result"></p>
   </body>
 </html>

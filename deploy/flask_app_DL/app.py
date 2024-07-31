@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, redirect, url_for, render_template, send_from_directory
+from flask import Flask, request, redirect, url_for, render_template, send_from_directory, jsonify
 from torch import nn
 from werkzeug.utils import secure_filename
 import torch
@@ -34,21 +34,17 @@ def allowed_file(filename):
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
-        # Check if the post request has the file part
         if 'file' not in request.files:
-            return redirect(request.url)
+            return jsonify({'error': 'No file part'})
         file = request.files['file']
-        # If user does not select file, browser also
-        # submit an empty part without filename
         if file.filename == '':
-            return redirect(request.url)
+            return jsonify({'error': 'No selected file'})
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
-            # Process the image and make a prediction
             label = predict(filepath)
-            return render_template('result.html', label=label, filename=filename)
+            return jsonify({'label': label})
     return render_template('index.html')
 
 def predict(image_path):
