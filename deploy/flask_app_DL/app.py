@@ -1,11 +1,12 @@
 import os
-from flask import Flask, request, redirect, url_for, render_template, send_from_directory, jsonify
-from torch import nn
-from werkzeug.utils import secure_filename
+
 import torch
 import torchvision.transforms as transforms
-from torchvision.models import resnet18
 from PIL import Image
+from flask import Flask, request, render_template, send_from_directory, jsonify
+from torch import nn
+from torchvision.models import resnet18
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
@@ -61,4 +62,4 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
