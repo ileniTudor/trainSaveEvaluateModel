@@ -7,7 +7,7 @@ from flask import Flask, request, render_template, send_from_directory, jsonify
 from torch import nn
 from torchvision.models import resnet18
 from werkzeug.utils import secure_filename
-
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
@@ -15,12 +15,14 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 model = resnet18(pretrained=False, num_classes=2)
+model.to(DEVICE)
 
-state_dict = torch.load('best_model_resnet18.pth')
+state_dict = torch.load('best_model_resnet18.pth',  map_location=torch.device(device=DEVICE))
 num_ftrs = model.fc.in_features
 model.fc = nn.Linear(num_ftrs, 2)  # Assuming 2 classes: cat and dog
 
 model.load_state_dict(state_dict)
+model.to(DEVICE)
 model.eval()
 
 transform = transforms.Compose([
@@ -62,4 +64,5 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=True, port=port)
