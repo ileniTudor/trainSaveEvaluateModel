@@ -1,5 +1,5 @@
 import cv2
-from roboflow import Roboflow
+from roboflow_segmentation_locally import Roboflow
 rf = Roboflow(api_key="WD1Mevk49Aalrm1m7oCK")
 project = rf.workspace().project("sem4-q9sys")
 model = project.version(1).model
