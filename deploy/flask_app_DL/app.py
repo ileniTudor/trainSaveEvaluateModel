@@ -8,6 +8,7 @@ from torch import nn
 from torchvision.models import resnet18
 from werkzeug.utils import secure_filename
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("DEVICE",DEVICE)
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
@@ -53,6 +54,8 @@ def upload_file():
 def predict(image_path):
     image = Image.open(image_path)
     image = transform(image).unsqueeze(0)
+    image = image.to(DEVICE)
+
     with torch.no_grad():
         output = model(image)
     _, predicted = output.max(1)
