@@ -10,10 +10,10 @@ from werkzeug.utils import secure_filename
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("DEVICE",DEVICE)
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads/'
+# app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
-
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+import io
+# os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 model = resnet18(pretrained=False, num_classes=2)
 model.to(DEVICE)
@@ -45,9 +45,15 @@ def upload_file():
             return jsonify({'error': 'No selected file'})
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            label = predict(filepath)
+
+            image = Image.open(io.BytesIO(file.read()))
+            # filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            # file.save(filepath)
+            image = transform(image).unsqueeze(0).to(DEVICE)
+            with torch.no_grad():
+                output = model(image)
+            _, predicted = output.max(1)
+            label = 'Dog' if predicted.item() == 1 else 'Cat'
             return jsonify({'label': label})
     return render_template('index.html')
 
@@ -62,9 +68,9 @@ def predict(image_path):
     # Assuming 0 is cat and 1 is dog in the model's output classes
     return 'Dog' if predicted.item() == 1 else 'Cat'
 
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+# @app.route('/uploads/<filename>')
+# def uploaded_file(filename):
+#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
