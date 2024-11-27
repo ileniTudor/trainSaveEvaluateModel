@@ -1,17 +1,12 @@
+import io
 import os
 
 import numpy as np
-import torch
+import onnxruntime as ort
 import torchvision.transforms as transforms
 from PIL import Image
-from flask import Flask, request, render_template, send_from_directory, jsonify
-from werkzeug.utils import secure_filename
-import io
-import onnxruntime as ort
+from flask import Flask, request, render_template, jsonify
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-onnx_path = "best_model_resnet18.onnx"
-# Load and check the model
 app = Flask(__name__)
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 
@@ -22,6 +17,7 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
+onnx_path = "best_model_resnet18.onnx"
 ort_session = ort.InferenceSession(onnx_path)
 
 def allowed_file(filename):
@@ -47,21 +43,6 @@ def upload_file():
             return jsonify({'label': label})
 
     return render_template('index.html')
-
-def predict(image_path):
-    image = Image.open(image_path)
-    image = transform(image).unsqueeze(0)
-    image = image.to(DEVICE)
-
-    with torch.no_grad():
-        output = model(image)
-    _, predicted = output.max(1)
-    # Assuming 0 is cat and 1 is dog in the model's output classes
-    return 'Dog' if predicted.item() == 1 else 'Cat'
-
-# @app.route('/uploads/<filename>')
-# def uploaded_file(filename):
-#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
