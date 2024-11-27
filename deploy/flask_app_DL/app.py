@@ -1,36 +1,28 @@
 import os
 
+import numpy as np
 import torch
 import torchvision.transforms as transforms
 from PIL import Image
 from flask import Flask, request, render_template, send_from_directory, jsonify
-from torch import nn
-from torchvision.models import resnet18
 from werkzeug.utils import secure_filename
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("DEVICE",DEVICE)
-app = Flask(__name__)
-# app.config['UPLOAD_FOLDER'] = 'uploads/'
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 import io
-# os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+import onnxruntime as ort
 
-model = resnet18(pretrained=False, num_classes=2)
-model.to(DEVICE)
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+onnx_path = "best_model_resnet18.onnx"
+# Load and check the model
+app = Flask(__name__)
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 
-state_dict = torch.load('best_model_resnet18.pth',  map_location=torch.device(device=DEVICE))
-num_ftrs = model.fc.in_features
-model.fc = nn.Linear(num_ftrs, 2)  # Assuming 2 classes: cat and dog
-
-model.load_state_dict(state_dict)
-model.to(DEVICE)
-model.eval()
 
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
+
+ort_session = ort.InferenceSession(onnx_path)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -44,17 +36,16 @@ def upload_file():
         if file.filename == '':
             return jsonify({'error': 'No selected file'})
         if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
 
             image = Image.open(io.BytesIO(file.read()))
-            # filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            # file.save(filepath)
-            image = transform(image).unsqueeze(0).to(DEVICE)
-            with torch.no_grad():
-                output = model(image)
-            _, predicted = output.max(1)
-            label = 'Dog' if predicted.item() == 1 else 'Cat'
+            image = transform(image).unsqueeze(0)
+            image_np = image.cpu().numpy()
+            ort_inputs = {ort_session.get_inputs()[0].name: image_np}
+            ort_outs = ort_session.run(None, ort_inputs)
+            predicted_class = np.argmax(ort_outs[0])
+            label = 'Dog' if predicted_class.item() == 1 else 'Cat'
             return jsonify({'label': label})
+
     return render_template('index.html')
 
 def predict(image_path):

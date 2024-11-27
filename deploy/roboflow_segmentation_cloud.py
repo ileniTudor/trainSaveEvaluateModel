@@ -1,5 +1,5 @@
 from roboflow import Roboflow
-rf = Roboflow(api_key="your key")
+rf = Roboflow(api_key="OV5Lde28GJ9sksEJLT1g")
 
 project = rf.workspace().project("dentalxray-s3wqb-5bdef")
 model = project.version(1).model

@@ -1,6 +1,6 @@
 Flask
-torch
-torchvision
+onnxruntime
+numpy
 Pillow
 Werkzeug
 gunicorn
