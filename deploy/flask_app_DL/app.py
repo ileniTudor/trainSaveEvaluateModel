@@ -3,19 +3,14 @@ import os
 
 import numpy as np
 import onnxruntime as ort
-import torchvision.transforms as transforms
 from PIL import Image
 from flask import Flask, request, render_template, jsonify
-
 app = Flask(__name__)
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 
+mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
 
 onnx_path = "best_model_resnet18.onnx"
 ort_session = ort.InferenceSession(onnx_path)
@@ -34,8 +29,13 @@ def upload_file():
         if file and allowed_file(file.filename):
 
             image = Image.open(io.BytesIO(file.read()))
-            image = transform(image).unsqueeze(0)
-            image_np = image.cpu().numpy()
+
+            image = image.resize((224, 224))
+            image_np = np.asarray(image).astype(np.float32) / 255.
+            image_np = (image_np - mean) / std
+            image_np = np.transpose(image_np, (2, 0, 1))
+            image_np = np.expand_dims(image_np, axis=0)
+
             ort_inputs = {ort_session.get_inputs()[0].name: image_np}
             ort_outs = ort_session.run(None, ort_inputs)
             predicted_class = np.argmax(ort_outs[0])
